@@ -1,8 +1,8 @@
 import os
 import network
-import btree
-import time
-import machine
+import btree    #   ____
+import time     #<  O| O
+import machine  #<  <~~>
 
 
 MYDB = "mydb"
@@ -114,21 +114,18 @@ class Station:
             AP.active(True)
 
         if ap:
-            print("")
-            print("-------AP INFO--------------")
+            print("\n"+"-------AP INFO--------------"+"\n")
             print('<>_<> Board type: ', self.board)
             print('<>_<> Discoverable as: ', self.ap_ssid)
             print('<>_<> Network config:', AP.ifconfig())
             if self.board == BOARDS[1]:
-                print('<>_<> ' + 'Maximum clients allowed: ' + str(self.max_clients))
-                print("")
+                print('<>_<> ' + 'Maximum clients allowed: ' + str(self.max_clients) + "\n")
 
             else:
                 print("")
         
         if WLAN.isconnected() and SSID_EXISTS:
-            print("")
-            print("-------WLAN INFO------------")
+            print("\n"+"-------WLAN INFO------------"+"\n")
             print('<>_<> ' + 'connected to:', self.wlan_ssid)
             print('<>_<> ' + 'network config:', WLAN.ifconfig())
             
@@ -166,52 +163,62 @@ class Station:
 
             # When 10 tries are done, it breaks the while loop.
             if attempt == 10 and not WLAN.isconnected():
-                print("Having some network problem. Please try again later.")
-                time.sleep(3)
+                print("Having some network problems.")
                 break
 
             if not WLAN.isconnected():
                 attempt += 1
                 WLAN.connect(ssid, password)
-                time.sleep(3)
+                time.sleep(2)
 
     def access_point(self):
         if self.board == BOARDS[0]:
             print("Type AP SSID")
             ssid = input("<:> ")
-            print("Type AP Password")
-            password = input("<:> ")
-            ap_ssid_password = {ssid: password}
-            db[b"1"] = b"{}".format(ap_ssid_password)
-            db.flush()
-            print("Your device will be visible as {}".format(ssid))
-            time.sleep(3)
-            self.base()
+            if ssid != "":
+                print("Type AP Password")
+                password = input("<:> ")
+                ap_ssid_password = {ssid: password}
+                db[b"1"] = b"{}".format(ap_ssid_password)
+                db.flush()
+                print("Your device will be visible as '{}'".format(ssid))
+                time.sleep(3)
+                self.base()
+            if ssid == "":
+                print("AP SSID cannot be an empty string.")
+                time.sleep(3)
+                self.base()
 
         if self.board == BOARDS[1]:
             print("Type AP SSID")
             ssid = input("<:> ")
-            ap_ssid_password = {ssid: None}
-            print("Type the amount of max clients allowed (1 ~ 10)")
-            try:
-                m_c = int(input("<:> "))
-                if m_c > 10:
-                    m_c = 10
-                max_clients = {"max_client/s": m_c}
-                db[b"1"] = b"{}".format(ap_ssid_password)
-                db[b"2"] = b"{}".format(max_clients)
-                db.flush()
-                print("Your device will be visible as {}".format(ssid))
-                print("Max clients are set to {}".format(m_c))
-                time.sleep(4)
-                self.base()
-            except ValueError:
-                print("Invalid input!")
-                time.sleep(2)
+            if ssid != "":
+                ap_ssid_password = {ssid: None}
+                print("Type the amount of max clients allowed (1 ~ 10)")
+                try:
+                    m_c = int(input("<:> "))
+                    if m_c > 10:
+                        m_c = 10
+                    max_clients = {"max_client/s": m_c}
+                    db[b"1"] = b"{}".format(ap_ssid_password)
+                    db[b"2"] = b"{}".format(max_clients)
+                    db.flush()
+                    print("Your device will be visible as '{}'".format(ssid))
+                    print("Max clients are set to '{}'".format(m_c))
+                    time.sleep(4)
+                    self.base()
+                except ValueError:
+                    print("Invalid input!")
+                    time.sleep(2)
+                    self.base()
+
+            if ssid == "": 
+                print("AP SSID cannot be an empty string.")
+                time.sleep(3)
                 self.base()
                 
 
-    def radar(self, add=True):
+    def radar(self):
         WLAN.active(False)
         time.sleep(2)
         WLAN.active(True)
@@ -221,37 +228,49 @@ class Station:
         # Here we get the index and the ssid using enumerate
         networks_with_index = [ssid for ssid in enumerate(networks, start=1)]
         # Here we print our result and update networks_dict
-
+        print("")
         for item in networks_with_index:
             networks_dict.update({item[0]: item[1].decode('utf-8')})
-            if add:
-                print("[" + str(item[0]) + "] " + item[1].decode('utf-8'))
-        if add:
-            print("Select the network index and press Enter")
-            try:
-                ask_user = int(input("<:> "))
-                if ask_user in networks_dict.keys():
-                    self.add_a_network(ssid=networks_dict[ask_user], radar=True)
-                else:
-                    print("Invalid input!")
-                    time.sleep(2)
-                    self.base()
-
-            except ValueError:
+            print("[" + str(item[0]) + "] " + item[1].decode('utf-8'))
+        print("\n"+"Select the network index and press Enter")
+        try:
+            ask_user = int(input("<:> "))
+            if ask_user in networks_dict.keys():
+                self.add_a_network(ssid=networks_dict[ask_user], radar=True)
+            else:
                 print("Invalid input!")
                 time.sleep(2)
                 self.base()
+
+        except ValueError:
+            print("Invalid input!")
+            time.sleep(2)
+            self.base()
         
-        return networks_dict
+        # return networks_dict
 
     def auto_connect(self):
-        intersection = set(self.QUERY0.keys()) & set(self.radar(add=False).values())
+        WLAN.active(False)
+        time.sleep(2)
+        WLAN.active(True)
+        # Here we try to find the intersection between WLAN.scan() and our database
+        intersection = set(self.QUERY0.keys()) & {i[0].decode('utf-8') for i in WLAN.scan()}
         known = list(intersection)
-        if len(intersection) > 0:
-            print("found: {}".format(known[0]))
+        if len(intersection) > 1:
+            print("found: {}".format(known))
+            if len(known) > 1:
+                for ssid in known:
+                    if not WLAN.isconnected():
+                        print("\n"+"attempting to connect '{}'".format(ssid)+"\n")
+                        self.wlan_connect(ssid, self.QUERY0[ssid])
+                    else:
+                        break
+        if len(intersection) == 1:
+            print("found: '{}'".format(known[0]))
+            print("\n"+"attempting to connect '{}'".format(known[0])+"\n")
             self.wlan_connect(known[0], self.QUERY0[known[0]])
 
-        else:
+        if len(intersection) == 0:
             print("No network matches the saved networks. Returning to the station")
             time.sleep(3)
             self.base()
@@ -259,15 +278,21 @@ class Station:
     def manually_connect(self):
         networks_dict = {}
         networks_with_index = [ssid for ssid in enumerate(self.QUERY0.keys(), start=1)]
+        print("")
         for item in networks_with_index:
             print("[" + str(item[0]) + "] " + item[1])
             networks_dict.update({item[0]: item[1]})
+        print("")
         print("Type the index and press enter to connect the respective network")
-        ask_user = int(input("<:> "))
-        if ask_user in networks_dict.keys():
-            self.wlan_connect(networks_dict[ask_user], self.QUERY0[networks_dict[ask_user]])
-
-        else:
+        try:
+            ask_user = int(input("<:> "))
+            if ask_user in networks_dict.keys():
+                self.wlan_connect(networks_dict[ask_user], self.QUERY0[networks_dict[ask_user]])
+            else:
+                print("Invalid input!")
+                time.sleep(2)
+                self.base()
+        except ValueError:
             print("Invalid input!")
             time.sleep(2)
             self.base()
@@ -276,12 +301,12 @@ class Station:
         global SSID_EXISTS
 
         if ssid is not None and radar:
-            print("Type Password for {}".format(ssid))
+            print("Type Password for '{}'".format(ssid))
             password = input("<:> ")
             self.QUERY0.update({ssid: password})
             db[b"0"] = b"{}".format(self.QUERY0)
             db.flush()
-            print("Network {} is added successfully.".format(ssid))
+            print("Network '{}' is added successfully.".format(ssid))
             SSID_EXISTS = True
             time.sleep(3)
             self.base()
@@ -289,22 +314,30 @@ class Station:
         else:
             print("Type SSID")
             ssid_ = input("<:> ")
-            print("Type Password for {}".format(ssid_))
-            password = input("<:> ")
-            self.QUERY0.update({ssid_: password})
-            db[b"0"] = b"{}".format(self.QUERY0)
-            db.flush()
-            print("Network {} is added successfully.".format(ssid_))
-            SSID_EXISTS = True
-            time.sleep(3)
-            self.base()
+            if ssid_ == "":
+                print("SSID cannot be an empty string.")
+                time.sleep(3)
+                self.base()
+
+            if ssid_ != "":
+                print("Type Password for '{}'".format(ssid_))
+                password = input("<:> ")
+                self.QUERY0.update({ssid_: password})
+                db[b"0"] = b"{}".format(self.QUERY0)
+                db.flush()
+                print("Network '{}' is added successfully.".format(ssid_))
+                SSID_EXISTS = True
+                time.sleep(3)
+                self.base()
 
     def delete_a_network(self):
         networks_dict = {}
         networks_with_index = [ssid for ssid in enumerate(self.QUERY0.keys(), start=1)]
+        print("")
         for item in networks_with_index:
             print("[" + str(item[0]) + "] " + item[1])
             networks_dict.update({item[0]: item[1]})
+        print("")
         print("Type the index and press enter to connect the respective network")
         try:
             ask_user = int(input("<:> "))
@@ -312,7 +345,7 @@ class Station:
                 del self.QUERY0[networks_dict[ask_user]]
                 db[b"0"] = b"{}".format(self.QUERY0)
                 db.flush()
-                print("Network {} is removed successfully.".format(networks_dict[ask_user]))
+                print("Network '{}' is removed successfully.".format(networks_dict[ask_user]))
                 time.sleep(3)
                 self.base()
             else:
@@ -330,19 +363,19 @@ class Station:
         This is the main base where user interaction is carried on. 
         """
         print("""
-          __|_________________________________________________________|__
-            |                * Welcome to the Station! *              |
-            |                                                         |
-            |    * Type any below given commands and press Enter *    |
-            |         * Just press Enter to exit the station *        |
-            |                                                         |
-            |    <:> "AP" to configure the Access point settings      |
-            |    <:> "R" to start the Radar                           |
-            |    <:> "C" to auto-connect to a saved network           |
-            |    <:> "MC" to manually connect to a saved network      |
-            |    <:> "A" to add a new network                         |
-            |    <:> "D" to remove a network                          |
-            |_________________________________________________________|
+___________________________________________________________
+|                * Welcome to the Station! *              |
+|                                                         |
+|    * Type any below given commands and press Enter *    |
+|         * Just press Enter to exit the station *        |
+|                                                         |
+|    <:> "AP" to configure the Access point settings      |
+|    <:> "R" to start the Radar                           |
+|    <:> "C" to auto-connect to a saved network           |
+|    <:> "MC" to manually connect to a saved network      |
+|    <:> "A" to add a new network                         |
+|    <:> "D" to remove a network                          |
+|_________________________________________________________|
             """)
 
         command = input("<:> ").lower()
@@ -373,6 +406,17 @@ class Station:
         else:
             pass
 
+def station(base=False, boot=False):
+    
+    if base:
+        return Station(board=BOARD_NAME).base()
+    
+    if boot:
+        return Station(board=BOARD_NAME)
 
-if __name__ == '__main__':
-    station = Station(board=BOARD_NAME)
+station(boot=True)
+
+# This line should be used in boot.py
+## from station import station
+
+# This command can be used in REPL to call station console
