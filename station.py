@@ -420,3 +420,4 @@ station(boot=True)
 ## from station import station
 
 # This command can be used in REPL to call station console
+## station(1)
