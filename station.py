@@ -4,30 +4,51 @@ import btree    #   ____
 import time     #<  O| O
 import machine  #<  <~~>
 
+# Colors for our console
+HEADER = '\033[95m'
+BLUE = '\033[94m'
+CYAN = '\033[96m'
+RED = '\033[91m'
+YELLOW = '\033[93m'
+GREEN = '\033[92m'
+BOLD = '\033[1m'
+UNDERLINE = '\033[4m'
+
+END = '\033[0m'
+CLEAR = '\033[2J'
+
+# Here we use a fancy way of defining where the color starts and ends
+## using ANSI escape sequences. This strategy will be also used later
+### in the script.
+
+PROMPT = "{1}<{2}:{1}>{0} ".format(END, BLUE, RED)
 
 MYDB = "mydb"
 
 def banner(new_data=False):
-    print("""
-    
-    DDDDDD   ^^^^^^^^^^^^^^^^^^^^^^^^^^    BBBBBB
-        d                                   b
-        d     -- ESP WIFI STATION           b
-        d-----------------------------------b
-        d         USING BTREE DB --         b
-        d                                   b
-        d       by: Shivang Chikani         b
-    DDDDDD   ^^^^^^^^^^^^^^^^^^^^^^^^^^    BBBBBB
 
-    """)
+
+#-----------------------------------------------------
+    print("""{1}
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^{0}{2}
+d     -- ESP WIFI STATION           b
+d-----------------------------------b
+d         USING BTREE DB --         b
+d                                   b
+d                                   b{0}{3}
+d      by: Shivang Chikani          b
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^{0}"""
+.format(END, RED, YELLOW, GREEN))
+#          {0}  {1}    {2}   {3}
+#------------------------------------------------------
 
     if new_data:
-        print("""
-    ----------------------------------------------------
-            Curently there is no saved database
-    A new database will be created with a system reboot.
-    ----------------------------------------------------
-        """)
+        print("""{1}
+----------------------------------------------------{0}
+{2}     Curently there is no saved database
+A new database will be created with a system reboot.{0}{1}
+----------------------------------------------------{0}
+""".format(END, HEADER, YELLOW))
         f = open(MYDB, "r+b")
         # Here we load the database
         db = btree.open(f)
@@ -65,7 +86,6 @@ AP = network.WLAN(network.AP_IF)
 WLAN = network.WLAN(network.STA_IF)
 
 
-
 SSID_EXISTS = False if len(db['0']) == 2 else True
 
 #            0     1    2    3     4    5
@@ -81,12 +101,9 @@ AUTO_WLAN = True
 
 class Station:
     
-
     """
     Station class defines all the functions necessary for btree database.
     """
-
-    
 
     def __init__(self, board):
 
@@ -114,29 +131,36 @@ class Station:
             AP.active(True)
 
         if ap:
-            print("\n"+"-------AP INFO--------------"+"\n")
-            print('<>_<> Board type: ', self.board)
-            print('<>_<> Discoverable as: ', self.ap_ssid)
-            print('<>_<> Network config:', AP.ifconfig())
-            if self.board == BOARDS[1]:
-                print('<>_<> ' + 'Maximum clients allowed: ' + str(self.max_clients) + "\n")
-
-            else:
-                print("")
-        
-        if WLAN.isconnected() and SSID_EXISTS:
-            print("\n"+"-------WLAN INFO------------"+"\n")
-            print('<>_<> ' + 'connected to:', self.wlan_ssid)
-            print('<>_<> ' + 'network config:', WLAN.ifconfig())
+            if not SSID_EXISTS:
+                print("{1}No saved network/s. Returning to the station{0}".format(END, YELLOW))
+                time.sleep(3)
+                self.base()
             
+            
+            print("""{1}
+-------{0}AP INFO{1}--------------------{0}
+{2}
+<>_<>{0} {3}Board type:{0} {4}{5}{0}{2}
+<>_<>{0} {3}Discoverable as:{0} {4}{6}{0}{2}
+<>_<>{0} {3}Network config:{0} {4}{7}{0}"""
+.format(END, HEADER, YELLOW, BLUE, BOLD, self.board, self.ap_ssid, AP.ifconfig()))
+
+            if self.board == BOARDS[1]:
+                print("{1}<>_<>{0} {2}Maximum clients allowed:{0} {3}{4}{0}".format(END, YELLOW, BLUE, BOLD, self.max_clients))
+            print("{1}----------------------------------{0}".format(END, HEADER))
+
+        if WLAN.isconnected() and SSID_EXISTS:
+            print("""{1}
+-------{0}WLAN INFO{1}------------------{0}
+{2}
+<>_<>{0} {3}connected to:{0} {4}{5}{0}{2} 
+<>_<>{0} {3}network config:{0} {4}{6}{0}{1}
+----------------------------------{0}
+"""
+.format(END, HEADER, YELLOW, BLUE, BOLD, self.wlan_ssid, WLAN.ifconfig()))
 
         if AUTO_WLAN and SSID_EXISTS and not WLAN.isconnected():
             self.auto_connect()
-        
-        if not SSID_EXISTS:
-            print("No saved network/s. Returning to the station")
-            time.sleep(3)
-            self.base()
 
 
     def wlan_connect(self, ssid, password):
@@ -144,7 +168,7 @@ class Station:
         time.sleep(1)
         WLAN.active(True)
         attempt = 0
-        print("connecting...")
+        print("{1}connecting...{0}".format(END, BLUE))
         WLAN.connect(ssid, password)
         time.sleep(2)
         while True:
@@ -156,14 +180,14 @@ class Station:
                 break
 
             if attempt == 6:
-                print("still connecting...")
+                print("{1}still connecting...{0}".format(END, BLUE))
 
             if attempt == 8:
-                print("one last try...")
+                print("{1}one last try...{0}".format(END, BLUE))
 
             # When 10 tries are done, it breaks the while loop.
             if attempt == 10 and not WLAN.isconnected():
-                print("Having some network problems.")
+                print("{1}Having some network problems.{0}".format(END, YELLOW))
                 break
 
             if not WLAN.isconnected():
@@ -173,47 +197,47 @@ class Station:
 
     def access_point(self):
         if self.board == BOARDS[0]:
-            print("Type AP SSID")
-            ssid = input("<:> ")
+            print("{1}Type AP SSID{0}".format(END, BLUE))
+            ssid = input(PROMPT)
             if ssid != "":
-                print("Type AP Password")
-                password = input("<:> ")
+                print("{1}Type AP Password{0}".format(END, BLUE))
+                password = input(PROMPT)
                 ap_ssid_password = {ssid: password}
                 db[b"1"] = b"{}".format(ap_ssid_password)
                 db.flush()
-                print("Your device will be visible as '{}'".format(ssid))
+                print("{1}Your device will be visible as{0} {2}{3}{0}".format(END, BLUE, BOLD, ssid))
                 time.sleep(3)
                 self.base()
             if ssid == "":
-                print("AP SSID cannot be an empty string.")
+                print("{1}AP SSID cannot be an empty string.{0}".format(END, YELLOW))
                 time.sleep(3)
                 self.base()
 
         if self.board == BOARDS[1]:
-            print("Type AP SSID")
-            ssid = input("<:> ")
+            print("{1}Type AP SSID{0}".format(END, BLUE))
+            ssid = input(PROMPT)
             if ssid != "":
                 ap_ssid_password = {ssid: None}
-                print("Type the amount of max clients allowed (1 ~ 10)")
+                print("{1}Type the amount of max clients allowed (1 ~ 10){0}".format(END, BLUE))
                 try:
-                    m_c = int(input("<:> "))
+                    m_c = int(input(PROMPT))
                     if m_c > 10:
                         m_c = 10
                     max_clients = {"max_client/s": m_c}
                     db[b"1"] = b"{}".format(ap_ssid_password)
                     db[b"2"] = b"{}".format(max_clients)
                     db.flush()
-                    print("Your device will be visible as '{}'".format(ssid))
-                    print("Max clients are set to '{}'".format(m_c))
+                    print("{1}Your device will be visible as{0} {2}{3}{0}".format(END, BLUE, BOLD, ssid))
+                    print("{1}Max clients are set to{0} {2}{3}{0}".format(END, BLUE, BOLD, m_c))
                     time.sleep(4)
                     self.base()
                 except ValueError:
-                    print("Invalid input!")
+                    print("{1}Invalid input!{0}".format(END, YELLOW))
                     time.sleep(2)
                     self.base()
 
-            if ssid == "": 
-                print("AP SSID cannot be an empty string.")
+            if ssid == "":
+                print("{1}AP SSID cannot be an empty string.{0}".format(END, YELLOW))
                 time.sleep(3)
                 self.base()
                 
@@ -231,19 +255,20 @@ class Station:
         print("")
         for item in networks_with_index:
             networks_dict.update({item[0]: item[1].decode('utf-8')})
-            print("[" + str(item[0]) + "] " + item[1].decode('utf-8'))
-        print("\n"+"Select the network index and press Enter")
+            print("[{1}{2}{0}] {3}{4}{0}"
+            .format(END, GREEN, str(item[0]), YELLOW, item[1].decode('utf-8')))
+        print("\n{1}Select the network index and press Enter{0}".format(END, BLUE))
         try:
-            ask_user = int(input("<:> "))
+            ask_user = int(input(PROMPT))
             if ask_user in networks_dict.keys():
                 self.add_a_network(ssid=networks_dict[ask_user], radar=True)
             else:
-                print("Invalid input!")
+                print("{1}Invalid input!{0}".format(END, YELLOW))
                 time.sleep(2)
                 self.base()
 
         except ValueError:
-            print("Invalid input!")
+            print("{1}Invalid input!{0}".format(END, YELLOW))
             time.sleep(2)
             self.base()
         
@@ -257,22 +282,22 @@ class Station:
         intersection = set(self.QUERY0.keys()) & {i[0].decode('utf-8') for i in WLAN.scan()}
         known = list(intersection)
         if len(intersection) > 1:
-            print("found: {}".format(known))
+            print("\n{1}found:{0} {2}{3}{0}".format(END, BLUE, BOLD, known))
             if len(known) > 1:
                 for ssid in known:
                     if not WLAN.isconnected():
-                        print("\n"+"attempting to connect '{}'".format(ssid)+"\n")
+                        print("\n{1}attempting to connect{0} '{2}{3}{0}'\n".format(END, BLUE, BOLD, ssid))
                         self.wlan_connect(ssid, self.QUERY0[ssid])
                     else:
                         break
         if len(intersection) == 1:
-            print("found: '{}'".format(known[0]))
-            print("\n"+"attempting to connect '{}'".format(known[0])+"\n")
+            print("\n{1}found:{0} {2}{3}{0}".format(END, BLUE, BOLD, known[0]))
+            print("\n{1}attempting to connect{0}".format(END, BLUE))
             self.wlan_connect(known[0], self.QUERY0[known[0]])
 
         if len(intersection) == 0:
-            print("No network matches the saved networks. Returning to the station")
-            time.sleep(3)
+            print("{1}No network matches the saved networks. Returning to the station{0}".format(END, YELLOW))
+            time.sleep(4)
             self.base()
             
     def manually_connect(self):
@@ -280,20 +305,20 @@ class Station:
         networks_with_index = [ssid for ssid in enumerate(self.QUERY0.keys(), start=1)]
         print("")
         for item in networks_with_index:
-            print("[" + str(item[0]) + "] " + item[1])
+            print("[{1}{2}{0}] {3}{4}{0}"
+            .format(END, GREEN, str(item[0]), YELLOW, item[1]))
             networks_dict.update({item[0]: item[1]})
-        print("")
-        print("Type the index and press enter to connect the respective network")
+        print("\n{1}Type the index to connect the network.{0}".format(END, BLUE))
         try:
-            ask_user = int(input("<:> "))
+            ask_user = int(input(PROMPT))
             if ask_user in networks_dict.keys():
                 self.wlan_connect(networks_dict[ask_user], self.QUERY0[networks_dict[ask_user]])
             else:
-                print("Invalid input!")
+                print("{1}Invalid input!{0}".format(END, YELLOW))
                 time.sleep(2)
                 self.base()
         except ValueError:
-            print("Invalid input!")
+            print("{1}Invalid input!{0}".format(END, YELLOW))
             time.sleep(2)
             self.base()
 
@@ -301,31 +326,31 @@ class Station:
         global SSID_EXISTS
 
         if ssid is not None and radar:
-            print("Type Password for '{}'".format(ssid))
-            password = input("<:> ")
+            print("{1}Type Password for{0} '{2}{3}{0}'".format(END, BLUE, BOLD, ssid))
+            password = input(PROMPT)
             self.QUERY0.update({ssid: password})
             db[b"0"] = b"{}".format(self.QUERY0)
             db.flush()
-            print("Network '{}' is added successfully.".format(ssid))
+            print("{1}Network{0} {2}{3}{0} {1}is added successfully.{0}".format(END, BLUE, BOLD, ssid))
             SSID_EXISTS = True
             time.sleep(3)
             self.base()
 
         else:
-            print("Type SSID")
-            ssid_ = input("<:> ")
+            print("{1}Type SSID{0}".format(END, BLUE))
+            ssid_ = input(PROMPT)
             if ssid_ == "":
-                print("SSID cannot be an empty string.")
+                print("{1}SSID cannot be an empty string.{0}".format(END, YELLOW))
                 time.sleep(3)
                 self.base()
 
             if ssid_ != "":
-                print("Type Password for '{}'".format(ssid_))
-                password = input("<:> ")
+                print("{1}Type Password for{0} {2}{3}{0}".format(END, BLUE, BOLD, ssid_))
+                password = input(PROMPT)
                 self.QUERY0.update({ssid_: password})
                 db[b"0"] = b"{}".format(self.QUERY0)
                 db.flush()
-                print("Network '{}' is added successfully.".format(ssid_))
+                print("{1}Network{0} {2}{3}{0} {1}is added successfully.{0}".format(END, BLUE, BOLD, ssid_))
                 SSID_EXISTS = True
                 time.sleep(3)
                 self.base()
@@ -335,25 +360,26 @@ class Station:
         networks_with_index = [ssid for ssid in enumerate(self.QUERY0.keys(), start=1)]
         print("")
         for item in networks_with_index:
-            print("[" + str(item[0]) + "] " + item[1])
+            print("[{1}{2}{0}] {3}{4}{0}"
+            .format(END, GREEN, str(item[0]), YELLOW, item[1]))
             networks_dict.update({item[0]: item[1]})
-        print("")
-        print("Type the index and press enter to connect the respective network")
+        print("\n{1}Type the index to delete the network.{0}".format(END, BLUE))
         try:
-            ask_user = int(input("<:> "))
+            ask_user = int(input(PROMPT))
             if ask_user in networks_dict.keys():
                 del self.QUERY0[networks_dict[ask_user]]
                 db[b"0"] = b"{}".format(self.QUERY0)
                 db.flush()
-                print("Network '{}' is removed successfully.".format(networks_dict[ask_user]))
+                print("{1}Network{0} {2}{3}{0} {1}is removed successfully.{0}"
+                .format(END, BLUE, BOLD, networks_dict[ask_user]))
                 time.sleep(3)
                 self.base()
             else:
-                print("Invalid input!")
+                print("{1}Invalid input!{0}".format(END, YELLOW))
                 time.sleep(2)
                 self.base()
         except ValueError:
-            print("Invalid input!")
+            print("{1}Invalid input!{0}".format(END, YELLOW))
             time.sleep(2)
             self.base()
 
@@ -362,23 +388,25 @@ class Station:
         """
         This is the main base where user interaction is carried on. 
         """
+        time.sleep(1)
+        print(CLEAR)
         print("""
-___________________________________________________________
-|                * Welcome to the Station! *              |
-|                                                         |
-|    * Type any below given commands and press Enter *    |
-|         * Just press Enter to exit the station *        |
-|                                                         |
-|    <:> "AP" to configure the Access point settings      |
-|    <:> "R" to start the Radar                           |
-|    <:> "C" to auto-connect to a saved network           |
-|    <:> "MC" to manually connect to a saved network      |
-|    <:> "A" to add a new network                         |
-|    <:> "D" to remove a network                          |
-|_________________________________________________________|
-            """)
+------------------------------------------------------
+            {1}Welcome to the Station!{0}
+                                                       
+{2}* Type any below given commands and press Enter  {0}
+    {2}* Just press Enter to exit the station{0}
+                                                       
+   {3}{4}AP{0}{5} to configure the Access point settings  {0}
+   {3}{4}R{0}{5}  to start the Radar                      {0}
+   {3}{4}C{0}{5}  to auto-connect to a saved network      {0}
+   {3}{4}MC{0}{5} to manually connect to a saved network  {0}
+   {3}{4}A{0}{5}  to add a new network                    {0}
+   {3}{4}D{0}{5}  to remove a network                     {0}
+------------------------------------------------------
+""".format(END, HEADER, YELLOW, PROMPT, BOLD, BLUE))
 
-        command = input("<:> ").lower()
+        command = input(PROMPT).lower()
 
 
         if command == COMMANDS[0]:
@@ -400,7 +428,7 @@ ___________________________________________________________
             self.delete_a_network()
 
         elif (command in COMMANDS[2] or command in COMMANDS[3] or command in COMMANDS[5]) and not SSID_EXISTS:
-            print("No saved network/s.")
+            print("{1}No saved network/s.{0}".format(END, YELLOW))
 
 
         else:
@@ -412,7 +440,7 @@ def station(base=False, boot=False):
         return Station(board=BOARD_NAME).base()
     
     if boot:
-        return Station(board=BOARD_NAME)
+        return Station(board=BOARD_NAME).__init__
 
 station(boot=True)
 
@@ -421,5 +449,3 @@ station(boot=True)
 
 # This command can be used in REPL to call station console
 ## station(1)
-# OR
-## station(True)
