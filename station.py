@@ -191,9 +191,9 @@ class Station:
                 break
 
             if not WLAN.isconnected():
-                attempt += 1
                 WLAN.connect(ssid, password)
                 time.sleep(2)
+                attempt += 1
 
     def access_point(self):
         if self.board == BOARDS[0]:
