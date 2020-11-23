@@ -16,6 +16,7 @@ UNDERLINE = '\033[4m'
 
 END = '\033[0m'
 CLEAR = '\033[2J'
+CLEAR_LINE = '\033[2K'
 
 # Here we use a fancy way of defining where the color starts and ends
 ## using ANSI escape sequences. This strategy will be also used later
@@ -243,21 +244,22 @@ class Station:
                 
 
     def radar(self):
+        print("\nScanning for networks ...")
         WLAN.active(False)
-        time.sleep(2)
+        time.sleep(1)
         WLAN.active(True)
         networks_dict = {}
         # scan for access points
-        networks = [ssid[0] for ssid in WLAN.scan()]  # we find the ssid from the tuple
+        networks = (ssid[0] for ssid in WLAN.scan())  # we find the ssid from the tuple
         # Here we get the index and the ssid using enumerate
-        networks_with_index = [ssid for ssid in enumerate(networks, start=1)]
+        networks_with_index = (ssid for ssid in enumerate(networks, start=1))
+        print("\n{1}Select the network index and press Enter{0}\n".format(END, BLUE))
         # Here we print our result and update networks_dict
-        print("")
         for item in networks_with_index:
-            networks_dict.update({item[0]: item[1].decode('utf-8')})
             print("[{1}{2}{0}] {3}{4}{0}"
             .format(END, GREEN, str(item[0]), YELLOW, item[1].decode('utf-8')))
-        print("\n{1}Select the network index and press Enter{0}".format(END, BLUE))
+            networks_dict.update({item[0]: item[1].decode('utf-8')})
+        
         try:
             ask_user = int(input(PROMPT))
             if ask_user in networks_dict.keys():
@@ -272,9 +274,10 @@ class Station:
             time.sleep(2)
             self.base()
         
-        # return networks_dict
+        return networks_dict
 
     def auto_connect(self):
+        print("Searching for available networks ...")
         WLAN.active(False)
         time.sleep(2)
         WLAN.active(True)
@@ -303,12 +306,11 @@ class Station:
     def manually_connect(self):
         networks_dict = {}
         networks_with_index = [ssid for ssid in enumerate(self.QUERY0.keys(), start=1)]
-        print("")
+        print("\n{1}Type the index to connect the network.{0}\n".format(END, BLUE))
         for item in networks_with_index:
             print("[{1}{2}{0}] {3}{4}{0}"
             .format(END, GREEN, str(item[0]), YELLOW, item[1]))
             networks_dict.update({item[0]: item[1]})
-        print("\n{1}Type the index to connect the network.{0}".format(END, BLUE))
         try:
             ask_user = int(input(PROMPT))
             if ask_user in networks_dict.keys():
@@ -358,12 +360,12 @@ class Station:
     def delete_a_network(self):
         networks_dict = {}
         networks_with_index = [ssid for ssid in enumerate(self.QUERY0.keys(), start=1)]
-        print("")
+        print("\n{1}Type the index to delete the network.{0}\n".format(END, BLUE))
         for item in networks_with_index:
             print("[{1}{2}{0}] {3}{4}{0}"
             .format(END, GREEN, str(item[0]), YELLOW, item[1]))
             networks_dict.update({item[0]: item[1]})
-        print("\n{1}Type the index to delete the network.{0}".format(END, BLUE))
+        
         try:
             ask_user = int(input(PROMPT))
             if ask_user in networks_dict.keys():
