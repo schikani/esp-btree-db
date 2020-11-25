@@ -37,7 +37,7 @@ d-----------------------------------b
 d         USING BTREE DB --         b
 d                                   b
 d                                   b{0}{3}
-d      by: Shivang Chikani          b
+d          by: schikani	            b
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^{0}"""
 .format(END, RED, YELLOW, GREEN))
 #          {0}  {1}    {2}   {3}
